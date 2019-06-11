@@ -34,7 +34,7 @@ using boost::ends_with;
 namespace fs = boost::filesystem;
 namespace dc = depth_clustering;
 
-string outputFolder = "/home/vance/output/kitti05/";  // 请以"/"结尾
+string outputFolder = "/home/vance/output/segment/";  // 请以"/"结尾
 bool savePictures = true;
 bool savePointcloud = false;
 
@@ -65,7 +65,7 @@ dc::Cloud::Ptr CloudFromFile(const string &file_name,
 }
 
 
-class Pointcloud2DM {
+class DepthClustering {
 private:
     unique_ptr<dc::ProjectionParams> _proj_params = nullptr;
 
@@ -113,7 +113,7 @@ private:
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr _cloud_out;
 
 public:
-    Pointcloud2DM(string folder);
+    DepthClustering(string folder);
 
     void readFolderFiles();
     void interpolation(Mat&, size_t, size_t, size_t);
@@ -126,7 +126,7 @@ public:
 
 };
 
-Pointcloud2DM::Pointcloud2DM(string folder): _data_folder(folder) {
+DepthClustering::DepthClustering(string folder): _data_folder(folder) {
     _cloud_out.reset(new pcl::PointCloud<pcl::PointXYZRGB>());
     _original_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>());
     _no_ground_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>());
@@ -291,13 +291,13 @@ Pointcloud2DM::Pointcloud2DM(string folder): _data_folder(folder) {
         //    g_visualizer->addPointCloud<pcl::PointXYZRGB>(_cloud_out, rgb, s2, g_v2);
         //    g_visualizer->spinOnce();
 
-        waitKey(10);
+        waitKey(0);
     }
     destroyAllWindows();
 }
 
 
-bool Pointcloud2DM::readCloudFromBinaryFile(const string& fileName, pcl::PointCloud<pcl::PointXYZI>::Ptr currentCloud) {
+bool DepthClustering::readCloudFromBinaryFile(const string& fileName, pcl::PointCloud<pcl::PointXYZI>::Ptr currentCloud) {
     int32_t num = 1000000;
     float *data = (float*)malloc(num*sizeof(float));
     float *px = data+0;
@@ -328,7 +328,7 @@ bool Pointcloud2DM::readCloudFromBinaryFile(const string& fileName, pcl::PointCl
       return false;
 }
 
-void Pointcloud2DM::readFolderFiles() {
+void DepthClustering::readFolderFiles() {
     _file_names.clear();
 
     fs::path path(_data_folder);
@@ -355,7 +355,7 @@ void Pointcloud2DM::readFolderFiles() {
     sort(_file_names.begin(), _file_names.end());
 }
 
-void Pointcloud2DM::interpolation(Mat& image, size_t row, size_t col, size_t cellSize)
+void DepthClustering::interpolation(Mat& image, size_t row, size_t col, size_t cellSize)
 {
 //    if (image.ptr(row)[col] == 0)
     if (image.ptr(row)[col] != 0)
@@ -386,7 +386,7 @@ void Pointcloud2DM::interpolation(Mat& image, size_t row, size_t col, size_t cel
         image.ptr(row)[col] = static_cast<uchar>(static_cast<float>(value)/validNeighbourNum);
 }
 
-void Pointcloud2DM::DMSmooth() {
+void DepthClustering::DMSmooth() {
     double minVal, maxVal;
     minMaxIdx(_interp_depth_image, &minVal, &maxVal);
     convertScaleAbs(_interp_depth_image, _depth_image_abs, 255 / maxVal);
@@ -414,7 +414,7 @@ void Pointcloud2DM::DMSmooth() {
     cout << "[INFO] Tatal zero depth: " << zeroNum << endl;
 }
 
-void Pointcloud2DM::getClusters() {
+void DepthClustering::getClusters() {
     if (!_cloud->projection_ptr()) {
       fprintf(stderr, "[ERROR] projection not initialized in cloud.\n");
       fprintf(stderr, "[ERROR] cannot label this cloud.\n");
@@ -478,7 +478,7 @@ void Pointcloud2DM::getClusters() {
 }
 
 
-void Pointcloud2DM::labelProjection() {
+void DepthClustering::labelProjection() {
     if (_clusters.size() < 1) {
         fprintf(stderr, "[ERROR] No clusters this frame!\n");
         return;
@@ -531,7 +531,7 @@ void Pointcloud2DM::labelProjection() {
     g_viewer.showCloud(_cloud_out);
 }
 
-void Pointcloud2DM::depthImage2Cloud(const Mat& image, pcl::PointCloud<pcl::PointXYZI>& cloud) {
+void DepthClustering::depthImage2Cloud(const Mat& image, pcl::PointCloud<pcl::PointXYZI>& cloud) {
     cloud.clear();
     for (int r = 0; r < image.rows; ++r) {
         for (int c = 0; c < image.cols; ++c) {
@@ -556,7 +556,7 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    Pointcloud2DM pc2dm(argv[1]);
+    DepthClustering dc(argv[1]);
 
     return 0;
 }

@@ -34,7 +34,7 @@ using boost::ends_with;
 namespace fs = boost::filesystem;
 namespace dc = depth_clustering;
 
-string outputFolder = "/home/vance/output/no_ground/";  // 请以"/"结尾
+string outputFolder = "/home/vance/output/segment/";  // 请以"/"结尾
 bool savePictures = true;
 
 dc::Cloud::Ptr CloudFromFile(const string &file_name,
